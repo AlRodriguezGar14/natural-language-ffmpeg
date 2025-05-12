@@ -279,7 +279,7 @@ convert to mp40
         {/* Highlighted code display */}
         <div
           ref={highlighterRef}
-          className="absolute top-0 left-0 right-0 bottom-0 p-16 overflow-auto pointer-events-none whitespace-pre"
+          className="absolute top-0 left-0 right-0 bottom-0 p-12 overflow-auto pointer-events-none whitespace-pre"
         >
           <SyntaxHighlighter code={code} />
         </div>
@@ -290,13 +290,16 @@ convert to mp40
           value={code}
           onChange={handleInput}
           onScroll={handleScroll}
-          className="w-full min-h-80 caret-[#FBDF90] p-16 text-transparent font-mono bg-transparent resize-none outline-none"
+          className="w-full min-h-80 caret-[#FBDF90] p-12 text-transparent font-mono bg-transparent resize-none outline-none"
           spellCheck="false"
           style={{
             caretColor: "#FBDF90",
             boxSizing: "border-box",
           }}
         />
+        <button className="mx-12 mb-8 text-[#C1CDCD] bg-[#31383F] py-2 px-4">
+          FFMPEG
+        </button>
       </div>
 
       <div className="mt-4">
