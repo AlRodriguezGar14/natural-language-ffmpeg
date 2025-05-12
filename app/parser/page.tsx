@@ -38,10 +38,10 @@ const commandPatterns: CommandPattern[] = [
   {
     name: "trim",
     expectedTokens: [
-      { position: 0, expected: "from" },
-      { position: 1, expected: /.+/, paramName: "start" },
-      { position: 2, expected: "to" },
-      { position: 3, expected: /.+/, paramName: "end" },
+      { position: 1, expected: "from" },
+      { position: 2, expected: /.+/, paramName: "start" },
+      { position: 3, expected: "to" },
+      { position: 4, expected: /.+/, paramName: "end" },
     ],
     validate: (params) => {
       return validateTrimParams(params.start, params.end);
@@ -113,7 +113,8 @@ interface Result {
   source?: string;
 }
 
-function validateCommandPatterns(command: string, args: string[]): Result {
+function validateCommandPatterns(args: string[]): Result {
+  const command = args[0];
   let validated = false;
   const validator = commandPatterns.find((p) => p.name === command);
   if (!validator) {
@@ -173,7 +174,8 @@ export default function Parser() {
 
   for (let i = 0; i < words.length; i++) {
     if (words[i] === "trim" && words.length > 5) {
-      const result = validateCommandPatterns(words[i], [
+      const result = validateCommandPatterns([
+        words[i],
         words[i + 1],
         words[i + 2],
         words[i + 3],
@@ -199,6 +201,8 @@ export default function Parser() {
       ))}
       <p>Parser</p>
       {JSON.stringify(commands, null, 2)}
+      <br />
+      <p>{parsedCommands.join(" ")}</p>
     </div>
   );
 }
