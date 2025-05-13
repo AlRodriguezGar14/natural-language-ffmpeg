@@ -1,4 +1,5 @@
 const code = `# Example code in natural ffmpeg language
+add_text "Hello World" on center
 trim from 10 to 20
 trim from 10:30 to 12:30
 trim from 00:10.00 to 00:00:20.00
@@ -29,6 +30,7 @@ interface CommandPattern {
     position: number;
     expected: string | RegExp | null;
     paramName?: string;
+    optional: boolean;
   }[];
   validate: (params: Record<string, string>) => boolean | string;
   createNode: (params: Record<string, string>) => unknown;
@@ -38,10 +40,10 @@ const commandPatterns: CommandPattern[] = [
   {
     name: "trim",
     expectedTokens: [
-      { position: 1, expected: "from" },
-      { position: 2, expected: /.+/, paramName: "start" },
-      { position: 3, expected: "to" },
-      { position: 4, expected: /.+/, paramName: "end" },
+      { position: 1, expected: "from", optional: false },
+      { position: 2, expected: /.+/, paramName: "start", optional: false },
+      { position: 3, expected: "to", optional: false },
+      { position: 4, expected: /.+/, paramName: "end", optional: false },
     ],
     validate: (params) => {
       return validateTrimParams(params.start, params.end);
@@ -51,6 +53,43 @@ const commandPatterns: CommandPattern[] = [
       params: {
         start: params.start,
         end: params.end,
+      },
+    }),
+  },
+  {
+    name: "add_text",
+    expectedTokens: [
+      { position: 1, expected: /^".*"$/, paramName: "text", optional: false },
+      { position: 2, expected: "on", optional: false },
+      {
+        position: 3,
+        expected: /top-left|top-right|bottom-left|bottom-right|center/,
+        paramName: "position",
+        optional: false,
+      },
+
+      // TODO: HAndle in the future optional params
+      // { position: 4, expected: "aligned", optional: true },
+      // {
+      //   position: 5,
+      //   expected: /left|center|right/,
+      //   paramName: "alignment",
+      //   optional: true,
+      // },
+      // { position: 6, expected: "with", optional: true },
+      // { position: 7, expected: "margin", optional: true },
+      // { position: 8, expected: /\d+px/, paramName: "margin", optional: true },
+    ],
+    validate: () => {
+      return true;
+    },
+    createNode: (params) => ({
+      type: "TextOverlay",
+      params: {
+        text: params.text,
+        position: params.position,
+        alignment: params.alignment ?? "left", // Default if not specified
+        margin: params.margin ? parseInt(params.margin) : 0,
       },
     }),
   },
@@ -95,14 +134,6 @@ function validateTrimParams(start: string, end: string): boolean {
 
 function validateComment(str: string): boolean {
   return str[0] === "#" && str[str.length - 1] === "\n";
-}
-
-interface TrimNode {
-  type: "Trim";
-  params: {
-    from: string;
-    to: string;
-  };
 }
 
 interface Result {
@@ -162,6 +193,44 @@ function validateCommandPatterns(args: string[]): Result {
   };
 }
 
+function processCommand(words: string[], startIndex: number): Result {
+  const command = words[startIndex];
+  const pattern = commandPatterns.find((p) => p.name === command);
+  if (!pattern) {
+    return {
+      success: false,
+      lastIndex: startIndex,
+      error: `Unknown command: ${command}`,
+    };
+  }
+
+  const requiredTokens = pattern.expectedTokens
+    .filter((t) => !t.optional)
+    .map((t) => t.position);
+
+  if (requiredTokens.length > 0) {
+    const maxRequired = Math.max(...requiredTokens);
+    if (startIndex + maxRequired >= words.length) {
+      return {
+        success: false,
+        lastIndex: startIndex,
+        error: `Incomplete command: ${command}`,
+      };
+    }
+  }
+  // Calculate how many tokens we should examine (all possible positions)
+  const maxPosition = Math.max(
+    ...pattern.expectedTokens.map((t) => t.position)
+  );
+  const endIndex = Math.min(startIndex + maxPosition + 1, words.length);
+
+  // Extract tokens for this command
+  const commandTokens = words.slice(startIndex, endIndex);
+
+  // Now validate the tokens
+  return validateCommandPatterns(commandTokens);
+}
+
 const commands: unknown[] = [];
 const errors: string[] = [];
 const parsedCommands: string[] = [];
@@ -173,13 +242,29 @@ export default function Parser() {
   }
 
   for (let i = 0; i < words.length; i++) {
-    if (words[i] === "trim" && words.length > 5) {
+    if (words[i] === "trim" && words.length + i > 5) {
       const result = validateCommandPatterns([
         words[i],
         words[i + 1],
         words[i + 2],
         words[i + 3],
         words[i + 4],
+      ]);
+      i += result.lastIndex;
+
+      if (!result.success) {
+        errors.push(result.error ?? "");
+      } else {
+        commands.push(result.node);
+        parsedCommands.push(result.source ?? "");
+      }
+    }
+    if (words[i] === "add_text" && words.length + i > 4) {
+      const result = validateCommandPatterns([
+        words[i],
+        words[i + 1],
+        words[i + 2],
+        words[i + 3],
       ]);
       i += result.lastIndex;
 
@@ -202,7 +287,7 @@ export default function Parser() {
       <p>Parser</p>
       {JSON.stringify(commands, null, 2)}
       <br />
-      <p>{parsedCommands.join(" ")}</p>
+      <p>{parsedCommands.join("-------------")}</p>
     </div>
   );
 }
