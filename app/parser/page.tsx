@@ -1,6 +1,9 @@
 const code = `# Example code in natural ffmpeg language
-add_text "Hello World" on center
+scale to 1920x1080 ignore aspect ratio
+compress
+add_text "Hello World" at center
 trim from 10 to 20
+convert to mp4
 trim from 10:30 to 12:30
 trim from 00:10.00 to 00:00:20.00
 `;
@@ -57,10 +60,79 @@ const commandPatterns: CommandPattern[] = [
     }),
   },
   {
+    // TODO: Validate once parsed that the conversion is from valid to valid format
+    name: "convert",
+    expectedTokens: [
+      { position: 1, expected: "to", optional: false },
+      {
+        position: 2,
+        expected:
+          /mp4|mov|mkv|webm|gif|mp3|wav|flac|aac|ogg|png|jpg|webp|avi|mp4a/,
+        paramName: "outputFormat",
+        optional: false,
+      },
+    ],
+    validate: () => {
+      return true;
+    },
+    createNode: (params) => ({
+      type: "Convert",
+      params: {
+        outputFormat: params.outputFormat,
+      },
+    }),
+  },
+  {
+    // TODO: Select which is the optional conversion format
+    name: "compress",
+    expectedTokens: [],
+    validate: () => {
+      return true;
+    },
+    createNode: () => ({
+      type: "Compress",
+      params: {},
+    }),
+  },
+  {
+    name: "scale",
+    expectedTokens: [
+      { position: 1, expected: "to", optional: false },
+      {
+        position: 2,
+        expected: /[0-9]+x[0-9]+/,
+        paramName: "resolution",
+        optional: false,
+      },
+      {
+        position: 3,
+        expected: /preserve|ignore/,
+        paramName: "preserve",
+        optional: false,
+      },
+      { position: 4, expected: "aspect", optional: false },
+      { position: 5, expected: "ratio", optional: false },
+    ],
+    validate: () => {
+      return true;
+    },
+    createNode: (params) => {
+      const [width, height] = params.resolution.split("x");
+
+      return {
+        type: "Scale",
+        params: {
+          width: width,
+          height: height,
+        },
+      };
+    },
+  },
+  {
     name: "add_text",
     expectedTokens: [
       { position: 1, expected: /^".*"$/, paramName: "text", optional: false },
-      { position: 2, expected: "on", optional: false },
+      { position: 2, expected: "at", optional: false },
       {
         position: 3,
         expected: /top-left|top-right|bottom-left|bottom-right|center/,
@@ -88,7 +160,7 @@ const commandPatterns: CommandPattern[] = [
       params: {
         text: params.text,
         position: params.position,
-        alignment: params.alignment ?? "left", // Default if not specified
+        alignment: params.alignment ?? "left", // Default if not specified - TODO: handle when there are optional params
         margin: params.margin ? parseInt(params.margin) : 0,
       },
     }),
@@ -96,7 +168,6 @@ const commandPatterns: CommandPattern[] = [
 ];
 
 function validateTrimParams(start: string, end: string): boolean {
-  console.log(`validating: ${start} - ${end}`);
   // HH:MM:SS.ms, MM:SS or SS format
   const timePattern = /^(?:(?:(\d+):)?(\d{1,2}):)?(\d{1,2})(?:\.(\d+))?$/;
 
@@ -242,7 +313,7 @@ export default function Parser() {
   }
 
   for (let i = 0; i < words.length; i++) {
-    if (words[i] === "trim" && words.length + i > 5) {
+    if (words[i] === "trim" && words.length > i + 5) {
       const result = validateCommandPatterns([
         words[i],
         words[i + 1],
@@ -259,7 +330,7 @@ export default function Parser() {
         parsedCommands.push(result.source ?? "");
       }
     }
-    if (words[i] === "add_text" && words.length + i > 4) {
+    if (words[i] === "add_text" && words.length > i + 4) {
       const result = validateCommandPatterns([
         words[i],
         words[i + 1],
@@ -268,6 +339,47 @@ export default function Parser() {
       ]);
       i += result.lastIndex;
 
+      if (!result.success) {
+        errors.push(result.error ?? "");
+      } else {
+        commands.push(result.node);
+        parsedCommands.push(result.source ?? "");
+      }
+    }
+    if (words[i] == "compress") {
+      const result = validateCommandPatterns([words[i]]);
+      i += result.lastIndex;
+      if (!result.success) {
+        errors.push(result.error ?? "");
+      } else {
+        commands.push(result.node);
+        parsedCommands.push(result.source ?? "");
+      }
+    }
+    if (words[i] == "convert" && words.length > i + 3) {
+      const result = validateCommandPatterns([
+        words[i],
+        words[i + 1],
+        words[i + 2],
+      ]);
+      i += result.lastIndex;
+      if (!result.success) {
+        errors.push(result.error ?? "");
+      } else {
+        commands.push(result.node);
+        parsedCommands.push(result.source ?? "");
+      }
+    }
+    if (words[i] == "scale" && words.length > i + 6) {
+      const result = validateCommandPatterns([
+        words[i],
+        words[i + 1],
+        words[i + 2],
+        words[i + 3],
+        words[i + 4],
+        words[i + 5],
+      ]);
+      i += result.lastIndex;
       if (!result.success) {
         errors.push(result.error ?? "");
       } else {
@@ -287,7 +399,9 @@ export default function Parser() {
       <p>Parser</p>
       {JSON.stringify(commands, null, 2)}
       <br />
-      <p>{parsedCommands.join("-------------")}</p>
+      {parsedCommands.map((c, i) => (
+        <p key={i}>{c}</p>
+      ))}
     </div>
   );
 }
