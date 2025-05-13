@@ -1,12 +1,20 @@
+/**
+ *  BRAINSTORM:
+ * For optional values, use a prenthesis to set them (like in the natural language when you want to add additional information)
+ * Then processs separatedly the parenthesis
+ */
+
 const code = `# Example code in natural ffmpeg language
+crop 200px from left
+trim from 00:10.00 to 00:00:20.00
 burn subtitles "subs.srt" at default
 scale to 1920x1080 ignore aspect ratio
-compress
+compress video
 add_text "Hello World" at center
 trim from 10 to 20
 convert to mp4
 trim from 10:30 to 12:30
-trim from 00:10.00 to 00:00:20.00
+fade in for 10s
 `;
 
 // Tokenization Regex Pattern Breakdown:
@@ -86,13 +94,22 @@ const commandPatterns: CommandPattern[] = [
   {
     // TODO: Select which is the optional conversion format
     name: "compress",
-    expectedTokens: [],
+    expectedTokens: [
+      {
+        position: 1,
+        expected: /video|audio/,
+        paramName: "bucket",
+        optional: false,
+      },
+    ],
     validate: () => {
       return true;
     },
-    createNode: () => ({
+    createNode: (params) => ({
       type: "Compress",
-      params: {},
+      params: {
+        bucket: params.bucket,
+      },
     }),
   },
   {
@@ -128,6 +145,62 @@ const commandPatterns: CommandPattern[] = [
         },
       };
     },
+  },
+  {
+    name: "crop",
+    expectedTokens: [
+      {
+        position: 1,
+        expected: /[0-9]+px/,
+        paramName: "cropSize",
+        optional: false,
+      },
+      { position: 2, expected: "from", optional: false },
+      {
+        position: 3,
+        expected: /top|bottom|left|right|width|height|each/,
+        paramName: "side",
+        optional: false,
+      },
+    ],
+    validate: () => {
+      return true;
+    },
+    createNode: (params) => ({
+      type: "Crop",
+      params: {
+        cropSize: params.cropSize,
+        side: params.side,
+      },
+    }),
+  },
+  {
+    name: "fade",
+    expectedTokens: [
+      {
+        position: 1,
+        expected: /in|out|in\/out/,
+        paramName: "operation",
+        optional: false,
+      },
+      { position: 2, expected: "for", optional: false },
+      {
+        position: 3,
+        expected: /[0-9]+s/,
+        paramName: "duration",
+        optional: false,
+      },
+    ],
+    validate: () => {
+      return true;
+    }, // TODO: The duration must be validated with the source video
+    createNode: (params) => ({
+      type: "Fade",
+      params: {
+        operation: params.operation,
+        duration: params.duration,
+      },
+    }),
   },
   {
     name: "burn",
@@ -275,11 +348,13 @@ function validateCommandPatterns(args: string[]): Result {
   const command = args[0];
   let validated = false;
   const validator = commandPatterns.find((p) => p.name === command);
+  console.log(command);
   if (!validator) {
+    console.log(`Could not find a validator for ${command}`);
     return {
       success: false,
       lastIndex: 0,
-      error: "Could not find a validator",
+      error: `Could not find a validator for ${command}`,
     };
   }
 
@@ -369,14 +444,8 @@ export default function Parser() {
   }
 
   for (let i = 0; i < words.length; i++) {
-    if (words[i] === "trim" && words.length > i + 5) {
-      const result = validateCommandPatterns([
-        words[i],
-        words[i + 1],
-        words[i + 2],
-        words[i + 3],
-        words[i + 4],
-      ]);
+    if (words[i] === "trim") {
+      const result = processCommand(words, i);
       i += result.lastIndex;
 
       if (!result.success) {
@@ -386,13 +455,8 @@ export default function Parser() {
         parsedCommands.push(result.source ?? "");
       }
     }
-    if (words[i] === "add_text" && words.length > i + 4) {
-      const result = validateCommandPatterns([
-        words[i],
-        words[i + 1],
-        words[i + 2],
-        words[i + 3],
-      ]);
+    if (words[i] === "add_text") {
+      const result = processCommand(words, i);
       i += result.lastIndex;
 
       if (!result.success) {
@@ -402,14 +466,8 @@ export default function Parser() {
         parsedCommands.push(result.source ?? "");
       }
     }
-    if (words[i] === "burn" && words.length > i + 5) {
-      const result = validateCommandPatterns([
-        words[i],
-        words[i + 1],
-        words[i + 2],
-        words[i + 3],
-        words[i + 4],
-      ]);
+    if (words[i] === "burn") {
+      const result = processCommand(words, i);
       i += result.lastIndex;
 
       if (!result.success) {
@@ -420,7 +478,7 @@ export default function Parser() {
       }
     }
     if (words[i] == "compress") {
-      const result = validateCommandPatterns([words[i]]);
+      const result = processCommand(words, i);
       i += result.lastIndex;
       if (!result.success) {
         errors.push(result.error ?? "");
@@ -429,12 +487,8 @@ export default function Parser() {
         parsedCommands.push(result.source ?? "");
       }
     }
-    if (words[i] == "convert" && words.length > i + 3) {
-      const result = validateCommandPatterns([
-        words[i],
-        words[i + 1],
-        words[i + 2],
-      ]);
+    if (words[i] == "convert") {
+      const result = processCommand(words, i);
       i += result.lastIndex;
       if (!result.success) {
         errors.push(result.error ?? "");
@@ -443,15 +497,28 @@ export default function Parser() {
         parsedCommands.push(result.source ?? "");
       }
     }
-    if (words[i] == "scale" && words.length > i + 6) {
-      const result = validateCommandPatterns([
-        words[i],
-        words[i + 1],
-        words[i + 2],
-        words[i + 3],
-        words[i + 4],
-        words[i + 5],
-      ]);
+    if (words[i] == "scale") {
+      const result = processCommand(words, i);
+      i += result.lastIndex;
+      if (!result.success) {
+        errors.push(result.error ?? "");
+      } else {
+        commands.push(result.node);
+        parsedCommands.push(result.source ?? "");
+      }
+    }
+    if (words[i] == "fade") {
+      const result = processCommand(words, i);
+      i += result.lastIndex;
+      if (!result.success) {
+        errors.push(result.error ?? "");
+      } else {
+        commands.push(result.node);
+        parsedCommands.push(result.source ?? "");
+      }
+    }
+    if (words[i] == "crop") {
+      const result = processCommand(words, i);
       i += result.lastIndex;
       if (!result.success) {
         errors.push(result.error ?? "");
@@ -463,15 +530,11 @@ export default function Parser() {
   }
   return (
     <div className="px-64 py-8 text-white">
+      <p className="py-8">{code}</p>
       {errors.length && <p className="text-red-600">{errors[0]}</p>}
-      {words.map((w, idx) => (
-        <p key={idx}>
-          {w} - {validateComment(w) ? "comment" : ""}
-        </p>
-      ))}
       <p>Parser</p>
       {JSON.stringify(commands, null, 2)}
-      <br />
+      <div className="my-12" />
       {parsedCommands.map((c, i) => (
         <p key={i}>{c}</p>
       ))}
