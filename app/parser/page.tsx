@@ -1,4 +1,5 @@
 const code = `# Example code in natural ffmpeg language
+burn subtitles "subs.srt" at default
 scale to 1920x1080 ignore aspect ratio
 compress
 add_text "Hello World" at center
@@ -127,6 +128,61 @@ const commandPatterns: CommandPattern[] = [
         },
       };
     },
+  },
+  {
+    name: "burn",
+    expectedTokens: [
+      {
+        position: 1,
+        expected: /text|image|subtitles/,
+        paramName: "contentType",
+        optional: false,
+      },
+      {
+        position: 2,
+        expected: /^".*"$/,
+        paramName: "content",
+        optional: false,
+      },
+
+      // TODO: Make these optional params
+      { position: 3, expected: "at", optional: false },
+      {
+        position: 4,
+        expected:
+          /top-left|top-right|bottom-left|bottom-right|center|left|right|top|bottom|default/,
+        paramName: "position",
+        optional: false,
+      },
+
+      // { position: 4, expected: "aligned", optional: true },
+      // {
+      //   position: 5,
+      //   expected: /left|center|right/,
+      //   paramName: "alignment",
+      //   optional: true,
+      // },
+      // { position: 6, expected: "with", optional: true },
+      // { position: 7, expected: "margin", optional: true },
+      // { position: 8, expected: /\d+px/, paramName: "margin", optional: true },
+    ],
+    validate: (params) => {
+      if (params.contentType === "subtitles") {
+        return /\.ass"$|\.srt"$/.test(params.content);
+      }
+      if (params.contentType === "image") {
+        return /\.png"$|\.jpeg"$|\.jpg"$/.test(params.content);
+      }
+      return true;
+    },
+    createNode: (params) => ({
+      type: "ContentOverlay",
+      params: {
+        content: params.content,
+        contentType: params.contentType,
+        position: params.position,
+      },
+    }),
   },
   {
     name: "add_text",
@@ -336,6 +392,23 @@ export default function Parser() {
         words[i + 1],
         words[i + 2],
         words[i + 3],
+      ]);
+      i += result.lastIndex;
+
+      if (!result.success) {
+        errors.push(result.error ?? "");
+      } else {
+        commands.push(result.node);
+        parsedCommands.push(result.source ?? "");
+      }
+    }
+    if (words[i] === "burn" && words.length > i + 5) {
+      const result = validateCommandPatterns([
+        words[i],
+        words[i + 1],
+        words[i + 2],
+        words[i + 3],
+        words[i + 4],
       ]);
       i += result.lastIndex;
 
