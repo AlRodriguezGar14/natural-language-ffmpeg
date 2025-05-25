@@ -4,6 +4,13 @@ import { useState, useEffect, useRef } from "react";
 import parser from "../parser/parser";
 import { commandPatterns } from "../parser/parser";
 
+interface Token {
+  type: string;
+  value: string;
+  line: number;
+  startPosition: number;
+}
+
 const TokenType = {
   KEYWORD: "keyword",
   STRING: "string",
@@ -51,11 +58,19 @@ const UNIT = ["px", "second", "timecode", "dB"];
 const SEPARATOR = ";";
 
 const tokenize = (code: string) => {
-  const tokens = [];
+  const tokens: Token[] = [];
   let current = 0;
+  let line = 1;
+  let startPosition = 0;
 
   while (current < code.length) {
     const char = code[current];
+
+    // Track line numbers
+    if (char === "\n") {
+      line++;
+      startPosition = current + 1;
+    }
 
     // Handle whitespace
     if (/\s/.test(char)) {
@@ -64,7 +79,12 @@ const tokenize = (code: string) => {
         value += code[current];
         current++;
       }
-      tokens.push({ type: TokenType.WHITESPACE, value });
+      tokens.push({
+        type: TokenType.WHITESPACE,
+        value,
+        line,
+        startPosition,
+      });
       continue;
     }
 
@@ -76,7 +96,7 @@ const tokenize = (code: string) => {
         value += code[current];
         current++;
       }
-      tokens.push({ type: TokenType.COMMENT, value });
+      tokens.push({ type: TokenType.COMMENT, value, line, startPosition });
       continue;
     }
 
@@ -92,7 +112,7 @@ const tokenize = (code: string) => {
         value += '"';
         current++;
       }
-      tokens.push({ type: TokenType.STRING, value });
+      tokens.push({ type: TokenType.STRING, value, line, startPosition });
       continue;
     }
 
@@ -134,44 +154,99 @@ const tokenize = (code: string) => {
 
       // Check for special types in priority order
       if (KEYWORDS.includes(value.toLowerCase())) {
-        tokens.push({ type: TokenType.KEYWORD, value });
+        tokens.push({ type: TokenType.KEYWORD, value, line, startPosition });
       } else if (OPERATOR.includes(value.toLowerCase())) {
-        tokens.push({ type: TokenType.OPERATOR, value });
+        tokens.push({ type: TokenType.OPERATOR, value, line, startPosition });
       } else if (POSITION.includes(value.toLowerCase())) {
-        tokens.push({ type: TokenType.POSITION, value });
+        tokens.push({ type: TokenType.POSITION, value, line, startPosition });
       } else if (ALIGMENT.includes(value.toLowerCase())) {
-        tokens.push({ type: TokenType.ALIGMENT, value });
+        tokens.push({ type: TokenType.ALIGMENT, value, line, startPosition });
       } else if (UNIT.includes(value.toLowerCase())) {
-        tokens.push({ type: TokenType.UNIT, value });
+        tokens.push({ type: TokenType.UNIT, value, line, startPosition });
       } else {
-        tokens.push({ type: TokenType.NONE, value });
+        tokens.push({ type: TokenType.NONE, value, line, startPosition });
       }
       continue;
     }
 
     // Handle separator
     if (char === SEPARATOR) {
-      tokens.push({ type: TokenType.SEPARATOR, value: char });
+      tokens.push({
+        type: TokenType.SEPARATOR,
+        value: char,
+        line,
+        startPosition,
+      });
       current++;
       continue;
     }
 
     // Handle single characters that don't match other rules
-    tokens.push({ type: TokenType.NONE, value: char });
+    tokens.push({ type: TokenType.NONE, value: char, line, startPosition });
     current++;
   }
 
   return tokens;
 };
 
+function parseErrorMessage(error: string) {
+  const commandMatch = error.split(":")[0]; // Gets the command name
+  const tokenMatch = error.match(/{([^}]+)}/); // Extracts content between {}
+  return {
+    command: commandMatch,
+    errorToken: tokenMatch ? tokenMatch[1] : null,
+  };
+}
+
+function isErrorCommand(
+  command: string,
+  errors: { command: string; errorToken: string | null }[],
+) {
+  for (const error of errors) {
+    if (error.command === command) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isErrorToken(
+  token: string,
+  errors: { command: string; errorToken: string | null }[],
+) {
+  for (const error of errors) {
+    if (error.errorToken === token) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Component to render highlighted code
-const SyntaxHighlighter = ({ code }: { code: string }) => {
+const SyntaxHighlighter = ({
+  code,
+  errors,
+}: {
+  code: string;
+  errors: string[];
+}) => {
   const tokens = tokenize(code);
+  const errorsInfo = errors.map(parseErrorMessage);
+  let errLine = 0;
+  let isError = false;
 
   return (
     <div className="font-mono">
       {tokens.map((token, index) => {
         let className = "";
+        if (token.type === TokenType.KEYWORD) {
+          if (isErrorCommand(token.value, errorsInfo)) {
+            errLine = token.line;
+            isError = true;
+          } else {
+            isError = false;
+          }
+        }
 
         switch (token.type) {
           case TokenType.KEYWORD:
@@ -203,6 +278,18 @@ const SyntaxHighlighter = ({ code }: { code: string }) => {
             break;
           default:
             className = "text-[#CED4DF]";
+        }
+
+        if (
+          isError &&
+          token.line === errLine &&
+          isErrorToken(token.value, errorsInfo)
+        ) {
+          return (
+            <span key={index} className="text-red-600 font-black">
+              {token.value}
+            </span>
+          );
         }
 
         return (
@@ -283,7 +370,7 @@ fade in for 10s
           ref={highlighterRef}
           className="absolute top-0 left-0 right-0 bottom-0 p-12 overflow-auto pointer-events-none whitespace-pre"
         >
-          <SyntaxHighlighter code={code} />
+          <SyntaxHighlighter code={code} errors={errors} />
         </div>
 
         {/* Editable textarea */}
