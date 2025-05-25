@@ -297,7 +297,26 @@ const commandPatterns: CommandPattern[] = [
 ];
 
 function validateTrimParams(start: string, end: string): boolean {
-  // HH:MM:SS.ms, MM:SS or SS format
+  /**
+   * HH:MM:SS.ms, MM:SS or SS format
+   *
+   * ^                                    // Start of string
+   * (?:                                 // Non-capturing group for hours/minutes (optional)
+   *   (?:(\d+):)?                      // HOURS: One or more digits + colon (optional)
+   *   (\d{1,2}):                       // MINUTES: 1-2 digits + colon
+   * )?                                 // End of hours/minutes group
+   * (\d{1,2})                          // SECONDS: 1-2 digits (required)
+   * (?:\.(\d+))?                       // MILLISECONDS: Decimal point + one or more digits (optional)
+   * $                                  // End of string
+   *
+   * Valid formats:
+   * - "12"            (seconds)
+   * - "12.5"          (seconds.ms)
+   * - "1:23"          (minutes:seconds)
+   * - "1:23.456"      (minutes:seconds.ms)
+   * - "1:02:03"       (hours:minutes:seconds)
+   * - "1:02:03.456"   (hours:minutes:seconds.ms)
+   */
   const timePattern = /^(?:(?:(\d+):)?(\d{1,2}):)?(\d{1,2})(?:\.(\d+))?$/;
 
   const validateFormat = (value: string): boolean => {
@@ -370,7 +389,7 @@ function validateCommandPatterns(args: string[]): Result {
     if (!validated) {
       return {
         success: false,
-        lastIndex: 0,
+        lastIndex: tokenCheck.position,
         error: `${command}: Invalid command arguments {${token}}`,
       };
     }
@@ -422,7 +441,7 @@ function processCommand(words: string[], startIndex: number): Result {
   }
   // Calculate how many tokens we should examine (all possible positions)
   const maxPosition = Math.max(
-    ...pattern.expectedTokens.map((t) => t.position)
+    ...pattern.expectedTokens.map((t) => t.position),
   );
   const endIndex = Math.min(startIndex + maxPosition + 1, words.length);
 
@@ -444,6 +463,16 @@ export default function Parser() {
   }
 
   for (let i = 0; i < words.length; i++) {
+    if (validateComment(words[i])) {
+      parsedCommands.push(words[i]);
+      commands.push({
+        type: "Comment",
+        params: {
+          content: words[i],
+        },
+      });
+    }
+
     if (words[i] === "trim") {
       const result = processCommand(words, i);
       i += result.lastIndex;
@@ -530,11 +559,13 @@ export default function Parser() {
   }
   return (
     <div className="px-64 py-8 text-white">
+      <h2>Code</h2>
       <p className="py-8">{code}</p>
       {errors.length && <p className="text-red-600">{errors[0]}</p>}
-      <p>Parser</p>
+      <h2>Commands</h2>
       {JSON.stringify(commands, null, 2)}
       <div className="my-12" />
+      <h2>Parsed Commands</h2>
       {parsedCommands.map((c, i) => (
         <p key={i}>{c}</p>
       ))}
