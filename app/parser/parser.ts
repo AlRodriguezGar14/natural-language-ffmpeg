@@ -452,7 +452,9 @@ function processCommand(words: string[], startIndex: number): Result {
   return validateCommandPatterns(commandTokens);
 }
 
-export default function parser(code: string) {
+export default function parser(input: string) {
+  const code = input.replace(";", " ");
+  console.log(code);
   const commands: unknown[] = [];
   const errors: string[] = [];
   const parsedCommands: string[] = [];

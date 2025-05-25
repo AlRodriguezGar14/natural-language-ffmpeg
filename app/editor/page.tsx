@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import parser from "../parser/parser";
+import { commandPatterns } from "../parser/parser";
 
 const TokenType = {
   KEYWORD: "keyword",
@@ -18,29 +20,21 @@ const TokenType = {
   EOF: "eof",
 };
 
-const KEYWORDS = [
-  "trim",
-  "set",
-  "format",
-  "add_text",
-  "increase_volume",
-  "overlay_image",
-  "scale",
-  "rotate",
-  "crop",
-  "face",
-  "speed_up",
-  "speed_down",
-  "convert_to",
-  "convert",
-  "effect",
-  "move",
-  "cut",
-  "if",
-];
+const KEYWORDS = commandPatterns.map((pattern) => pattern.name);
 
-// Define operators
-const OPERATOR = ["by", "to", "from", "in", "at"];
+const OPERATOR = [
+  "from",
+  "to",
+  "preserve",
+  "ignore",
+  "aspect",
+  "ratio",
+  "in",
+  "out",
+  "in\/out",
+  "for",
+  "at",
+];
 
 const POSITION = [
   "top-left",
@@ -104,31 +98,31 @@ const tokenize = (code: string) => {
 
     // Handle timecodes in format HH:MM:SS;FF (hours:minutes:seconds;frames)
     // Look ahead to see if this could be the start of a timecode (starts with a digit)
-    if (/[0-9]/.test(char)) {
-      // Check if we have enough characters to potentially form a timecode
-      if (current + 10 < code.length) {
-        // Check if the next characters match the timecode pattern: 12:12:12;00
-        const timeCodePattern = /^(\d{2}:\d{2}:\d{2};\d{2})/;
-        const possibleTimecode = code.substring(current);
-        const match = possibleTimecode.match(timeCodePattern);
+    // if (/[0-9]/.test(char)) {
+    // Check if we have enough characters to potentially form a timecode
+    // if (current + 10 < code.length) {
+    //   // Check if the next characters match the timecode pattern: 12:12:12;00
+    //   const timeCodePattern = /^(\d{2}:\d{2}:\d{2};\d{2})/;
+    //   const possibleTimecode = code.substring(current);
+    //   const match = possibleTimecode.match(timeCodePattern);
+    //
+    //   if (match) {
+    //     const timecodeValue = match[1]; // This gives us the full timecode
+    //     tokens.push({ type: TokenType.TIMECODE, value: timecodeValue });
+    //     current += timecodeValue.length;
+    //     continue;
+    //   }
+    // }
 
-        if (match) {
-          const timecodeValue = match[1]; // This gives us the full timecode
-          tokens.push({ type: TokenType.TIMECODE, value: timecodeValue });
-          current += timecodeValue.length;
-          continue;
-        }
-      }
-
-      // If it's not a timecode, continue with number parsing
-      let value = "";
-      while (current < code.length && /[0-9.]/.test(code[current])) {
-        value += code[current];
-        current++;
-      }
-      tokens.push({ type: TokenType.NUMBER, value });
-      continue;
-    }
+    // If it's not a timecode, continue with number parsing
+    //   let value = "";
+    //   while (current < code.length && /[0-9.]/.test(code[current])) {
+    //     value += code[current];
+    //     current++;
+    //   }
+    //   tokens.push({ type: TokenType.NUMBER, value });
+    //   continue;
+    // }
 
     // Handle keywords, operators, positions, alignments, and units
     if (/[a-zA-Z_]/.test(char)) {
@@ -187,7 +181,10 @@ const SyntaxHighlighter = ({ code }: { code: string }) => {
             className = "text-[#A7C07F]";
             break;
           case TokenType.OPERATOR:
-            className = "text-[#D598B5] italic";
+            {
+              /* className = "text-[#D598B5] italic"; */
+            }
+            className = "text-[#7FBCB3]";
             break;
           case TokenType.TIMECODE:
             className = "text-[#78d1c3]";
@@ -221,30 +218,35 @@ const SyntaxHighlighter = ({ code }: { code: string }) => {
 // Editor component with textarea overlay for editing
 export default function Editor() {
   const [code, setCode] = useState(`# Example code in natural ffmpeg language
-
-convert x from jpg to png
-
-move "Hello World" to output
-
-cut data if x > 1add text "Welcome!" in top-left aligned left with margin 20px;
-
-overlay_image "logo.png" at bottom-right;
-
-trim from 00:00:10 to 00:00:20;
-
-scale to 1280x720 preserve aspect ratio;
-
-convert to mp40
-  `);
+crop 200px from left; trim from 00:10.00 to 00:00:20.00
+burn subtitles "subs.srt" at default
+scale to 1920x1080 ignore aspect ratio
+compress video
+add_text "Hello World" at center
+trim from 10 to 20
+convert to mp4
+trim from 10:30 to 12:30
+fade in for 10s
+`);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlighterRef = useRef<HTMLDivElement>(null);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [commands, setCommands] = useState<unknown[]>([]);
+  const [parsedCommands, setParsedCommands] = useState<string[]>([]);
 
   // Handle textarea input
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setCode(value);
   };
+
+  useEffect(() => {
+    const parsed = parser(code);
+    setErrors(parsed.errors);
+    setCommands(parsed.commands);
+    setParsedCommands(parsed.parsedCommands);
+  }, [code]);
 
   // Sync scroll between textarea and highlighter
   const handleScroll = () => {
@@ -304,6 +306,16 @@ convert to mp40
 
       <div className="mt-4">
         <div className="p-4 bg-[#161F27] text-[#859188] rounded overflow-auto">
+          <h2>Code</h2>
+          <p className="py-8">{code}</p>
+          <h3>Errors</h3>
+          {errors && errors.length && <p className="text-red-600">{errors}</p>}
+          <h2>Commands</h2>
+          {JSON.stringify(commands, null, 2)}
+          <div className="my-12" />
+          <h2>Parsed Commands</h2>
+          {parsedCommands && parsedCommands.map((c, i) => <p key={i}>{c}</p>)}
+          <h3>Tokens</h3>
           <pre className="whitespace-pre-wrap">
             {JSON.stringify(tokenize(code), null, 2)}
           </pre>
