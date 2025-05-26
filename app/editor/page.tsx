@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import parser from "../parser/parser";
 import { commandPatterns } from "../parser/parser";
+import FileAnalyzer from "./FileAnalyzer";
 
 interface Token {
   type: string;
@@ -364,6 +365,7 @@ fade in for 10s
 
   return (
     <div className="w-full max-w-7xl  m-auto pt-64 ">
+      <FileAnalyzer />
       <div className="relative rounded bg-[#161F27]">
         {/* Highlighted code display */}
         <div
