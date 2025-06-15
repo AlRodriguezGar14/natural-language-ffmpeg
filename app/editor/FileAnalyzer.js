@@ -10,8 +10,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-export default function FileAnalyzer() {
-  const [fileInfo, setFileInfo] = useState(null);
+export default function FileAnalyzer({ fileInfo, setFileInfo }) {
+  // const [fileInfo, setFileInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 

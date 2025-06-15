@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import parser from "../parser/parser";
 import { commandPatterns } from "../parser/parser";
+import { ToFfmpeg } from "./ffmpegCompiler";
 import FileAnalyzer from "./FileAnalyzer";
 
 interface Token {
@@ -39,7 +40,7 @@ const OPERATOR = [
   "ratio",
   "in",
   "out",
-  "in\/out",
+  "in/out",
   "for",
   "at",
 ];
@@ -58,7 +59,7 @@ const UNIT = ["px", "second", "timecode", "dB"];
 
 const SEPARATOR = ";";
 
-const tokenize = (code: string) => {
+const tokenize = (code: string): Token[] => {
   const tokens: Token[] = [];
   let current = 0;
   let line = 1;
@@ -318,10 +319,16 @@ fade in for 10s
 `);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [tokenized, setTokenized] = useState<Token[]>([]);
+  const [fileInfo, setFileInfo] = useState(null);
   const highlighterRef = useRef<HTMLDivElement>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [commands, setCommands] = useState<unknown[]>([]);
   const [parsedCommands, setParsedCommands] = useState<string[]>([]);
+
+  useEffect(() => {
+    setTokenized(tokenize(code));
+  }, [code]);
 
   // Handle textarea input
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -365,7 +372,8 @@ fade in for 10s
 
   return (
     <div className="w-full max-w-7xl  m-auto pt-64 ">
-      <FileAnalyzer />
+      {fileInfo && <ToFfmpeg commands={commands} fileInfo={fileInfo} />}
+      <FileAnalyzer fileInfo={fileInfo} setFileInfo={setFileInfo} />
       <div className="relative rounded bg-[#161F27]">
         {/* Highlighted code display */}
         <div
@@ -406,7 +414,7 @@ fade in for 10s
           {parsedCommands && parsedCommands.map((c, i) => <p key={i}>{c}</p>)}
           <h3>Tokens</h3>
           <pre className="whitespace-pre-wrap">
-            {JSON.stringify(tokenize(code), null, 2)}
+            {JSON.stringify(tokenized, null, 2)}
           </pre>
         </div>
       </div>
