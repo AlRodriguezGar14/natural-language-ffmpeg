@@ -125,7 +125,7 @@ export const commandPatterns: CommandPattern[] = [
       {
         position: 3,
         expected: /preserve|ignore/,
-        paramName: "preserve",
+        paramName: "aspectRatio",
         optional: false,
       },
       { position: 4, expected: "aspect", optional: false },
@@ -142,6 +142,7 @@ export const commandPatterns: CommandPattern[] = [
         params: {
           width: width,
           height: height,
+          aspectRatio: params.aspectRatio,
         },
       };
     },

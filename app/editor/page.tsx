@@ -5,6 +5,7 @@ import parser from "../parser/parser";
 import { commandPatterns } from "../parser/parser";
 import { ToFfmpeg } from "./ffmpegCompiler";
 import FileAnalyzer from "./FileAnalyzer";
+import { useRouter } from "next/navigation";
 
 interface Token {
   type: string;
@@ -202,7 +203,7 @@ function parseErrorMessage(error: string) {
 
 function isErrorCommand(
   command: string,
-  errors: { command: string; errorToken: string | null }[],
+  errors: { command: string; errorToken: string | null }[]
 ) {
   for (const error of errors) {
     if (error.command === command) {
@@ -214,7 +215,7 @@ function isErrorCommand(
 
 function isErrorToken(
   token: string,
-  errors: { command: string; errorToken: string | null }[],
+  errors: { command: string; errorToken: string | null }[]
 ) {
   for (const error of errors) {
     if (error.errorToken === token) {
@@ -323,8 +324,10 @@ fade in for 10s
   const [fileInfo, setFileInfo] = useState(null);
   const highlighterRef = useRef<HTMLDivElement>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [debug, setDebug] = useState(false);
   const [commands, setCommands] = useState<unknown[]>([]);
   const [parsedCommands, setParsedCommands] = useState<string[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     setTokenized(tokenize(code));
@@ -396,28 +399,45 @@ fade in for 10s
             boxSizing: "border-box",
           }}
         />
-        <button className="mx-12 mb-8 text-[#C1CDCD] bg-[#31383F] py-2 px-4">
-          FFMPEG
+        <button
+          onClick={() => {
+            setDebug((debug) => !debug);
+          }}
+          className="mx-12 mb-8 text-[#C1CDCD] bg-[#31383F] py-2 px-4"
+        >
+          Debug
+        </button>
+        <button
+          onClick={() => {
+            router.push("/docs");
+          }}
+          className="mx-12 mb-8 text-[#C1CDCD] bg-[#31383F] py-2 px-4"
+        >
+          Dictionary
         </button>
       </div>
 
-      <div className="mt-4">
-        <div className="p-4 bg-[#161F27] text-[#859188] rounded overflow-auto">
-          <h2>Code</h2>
-          <p className="py-8">{code}</p>
-          <h3>Errors</h3>
-          {errors && errors.length && <p className="text-red-600">{errors}</p>}
-          <h2>Commands</h2>
-          {JSON.stringify(commands, null, 2)}
-          <div className="my-12" />
-          <h2>Parsed Commands</h2>
-          {parsedCommands && parsedCommands.map((c, i) => <p key={i}>{c}</p>)}
-          <h3>Tokens</h3>
-          <pre className="whitespace-pre-wrap">
-            {JSON.stringify(tokenized, null, 2)}
-          </pre>
+      {debug && (
+        <div className="mt-4">
+          <div className="p-4 bg-[#161F27] text-[#859188] rounded overflow-auto">
+            <h2>Code</h2>
+            <p className="py-8">{code}</p>
+            <h3>Errors</h3>
+            {errors && errors.length && (
+              <p className="text-red-600">{errors}</p>
+            )}
+            <h2>Commands</h2>
+            {JSON.stringify(commands, null, 2)}
+            <div className="my-12" />
+            <h2>Parsed Commands</h2>
+            {parsedCommands && parsedCommands.map((c, i) => <p key={i}>{c}</p>)}
+            <h3>Tokens</h3>
+            <pre className="whitespace-pre-wrap">
+              {JSON.stringify(tokenized, null, 2)}
+            </pre>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

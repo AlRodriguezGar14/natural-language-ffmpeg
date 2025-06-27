@@ -81,7 +81,7 @@ export default function FileAnalyzer({ fileInfo, setFileInfo }) {
 
   return (
     <div className="p-6">
-      <div className="max-w-4xl mx-auto">
+      <div >
         <h1 className="text-3xl font-bold text-white mb-6">
           Media File Analyzer
         </h1>
