@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Natural FFmpeg Language
+
+Natural FFmpeg Language is a human-readable syntax for video processing that automatically translates to complex FFmpeg commands. It makes video editing accessible to everyone by providing a simple, intuitive language that handles the complexity of FFmpeg behind the scenes.
+
+## Overview
+
+This project provides a dictionary and translator for Natural FFmpeg Language, allowing users to write simple commands that are automatically optimized and converted to proper FFmpeg syntax.
+
+Example:
+
+```
+# Natural Language
+crop 100px from left
+scale to 1280x720 preserve aspect ratio
+fade in for 2s
+
+# Automatically converts to FFmpeg
+ffmpeg -i input.mp4 -vf "crop=1820:1080:100:0,scale=1280:720:force_original_aspect_ratio=decrease,fade=in:0:2" output.mp4
+```
+
+## Todo List
+
+- [ ] **Expand the dictionary with the exact options for each command**
+
+  - [ ] Document all valid parameters for each command
+  - [ ] Add validation rules for each parameter
+  - [ ] Include examples for complex operations
+
+- [ ] **Make arguments optional**
+
+  - [ ] Implement default values for common parameters
+  - [ ] Add fallback behavior when arguments are missing
+  - [ ] Improve error handling for partial commands
+
+- [ ] **Expand the burn-in text to receive color and transparency as arguments**
+
+  - [ ] Allow color specification (hex, RGB, named colors)
+  - [ ] Add transparency/alpha channel support
+  - [ ] Support font selection and sizing options
+
+- [ ] **Add new filters**
+
+  - [ ] Remove duplicate frames in x pattern
+  - [ ] Add denoising filters
+  - [ ] Support advanced color grading
+  - [ ] Implement speed adjustment (slow motion, time-lapse)
+
+- [ ] **Improve error handling and validation**
+
+  - [ ] Provide more helpful error messages
+  - [ ] Implement syntax checking before processing
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the Natural FFmpeg Language documentation and examples.
