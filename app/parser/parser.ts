@@ -1,3 +1,16 @@
+import { 
+  CommandPattern, 
+  Command,
+  TrimParams,
+  CompressParams,
+  ScaleParams,
+  CropParams,
+  FadeParams,
+  ContentOverlayParams,
+  TextOverlayParams,
+  Result
+} from '../../lib/types';
+
 /**
  *  BRAINSTORM:
  * For optional values, use a prenthesis to set them (like in the natural language when you want to add additional information)
@@ -36,18 +49,6 @@
 //   /g         - Global flag (find all matches, not just first)
 const pattern = /(?:#[^\n]*\n|"[^"]*"|[^\s"#]+)/g;
 
-interface CommandPattern {
-  name: string;
-  expectedTokens: {
-    position: number;
-    expected: string | RegExp | null;
-    paramName?: string;
-    optional: boolean;
-  }[];
-  validate: (params: Record<string, string>) => boolean | string;
-  createNode: (params: Record<string, string>) => unknown;
-}
-
 export const commandPatterns: CommandPattern[] = [
   {
     name: "trim",
@@ -60,12 +61,12 @@ export const commandPatterns: CommandPattern[] = [
     validate: (params) => {
       return validateTrimParams(params.start, params.end);
     },
-    createNode: (params) => ({
+    createNode: (params): Command => ({
       type: "Trim",
       params: {
         start: params.start,
         end: params.end,
-      },
+      } as TrimParams,
     }),
   },
   {
@@ -105,11 +106,11 @@ export const commandPatterns: CommandPattern[] = [
     validate: () => {
       return true;
     },
-    createNode: (params) => ({
+    createNode: (params): Command => ({
       type: "Compress",
       params: {
-        bucket: params.bucket,
-      },
+        bucket: params.bucket as "video" | "audio",
+      } as CompressParams,
     }),
   },
   {
@@ -134,7 +135,7 @@ export const commandPatterns: CommandPattern[] = [
     validate: () => {
       return true;
     },
-    createNode: (params) => {
+    createNode: (params): Command => {
       const [width, height] = params.resolution.split("x");
 
       return {
@@ -142,8 +143,8 @@ export const commandPatterns: CommandPattern[] = [
         params: {
           width: width,
           height: height,
-          aspectRatio: params.aspectRatio,
-        },
+          aspectRatio: params.aspectRatio as "preserve" | "ignore",
+        } as ScaleParams,
       };
     },
   },
@@ -167,12 +168,12 @@ export const commandPatterns: CommandPattern[] = [
     validate: () => {
       return true;
     },
-    createNode: (params) => ({
+    createNode: (params): Command => ({
       type: "Crop",
       params: {
         cropSize: params.cropSize,
-        side: params.side,
-      },
+        side: params.side as "top" | "bottom" | "left" | "right" | "width" | "height" | "each",
+      } as CropParams,
     }),
   },
   {
@@ -195,12 +196,12 @@ export const commandPatterns: CommandPattern[] = [
     validate: () => {
       return true;
     }, // TODO: The duration must be validated with the source video
-    createNode: (params) => ({
+    createNode: (params): Command => ({
       type: "Fade",
       params: {
-        operation: params.operation,
+        operation: params.operation as "in" | "out" | "in/out",
         duration: params.duration,
-      },
+      } as FadeParams,
     }),
   },
   {
@@ -249,13 +250,13 @@ export const commandPatterns: CommandPattern[] = [
       }
       return true;
     },
-    createNode: (params) => ({
+    createNode: (params): Command => ({
       type: "ContentOverlay",
       params: {
         content: params.content,
-        contentType: params.contentType,
+        contentType: params.contentType as "text" | "image" | "subtitles",
         position: params.position,
-      },
+      } as ContentOverlayParams,
     }),
   },
   {
@@ -285,14 +286,14 @@ export const commandPatterns: CommandPattern[] = [
     validate: () => {
       return true;
     },
-    createNode: (params) => ({
+    createNode: (params): Command => ({
       type: "TextOverlay",
       params: {
         text: params.text,
-        position: params.position,
-        alignment: params.alignment ?? "left", // Default if not specified - TODO: handle when there are optional params
+        position: params.position as "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center",
+        alignment: params.alignment ?? "left",
         margin: params.margin ? parseInt(params.margin) : 0,
-      },
+      } as TextOverlayParams,
     }),
   },
 ];
@@ -354,14 +355,6 @@ function validateTrimParams(start: string, end: string): boolean {
 
 function validateComment(str: string): boolean {
   return str[0] === "#" && str[str.length - 1] === "\n";
-}
-
-interface Result {
-  success: boolean;
-  lastIndex: number;
-  node?: unknown; // TODO: create an enum when I have the nodes
-  error?: string;
-  source?: string;
 }
 
 function validateCommandPatterns(args: string[]): Result {

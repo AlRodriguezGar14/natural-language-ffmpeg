@@ -1,52 +1,20 @@
-interface FileInfo {
-  input?: {
-    filename?: string;
-    size?: { formatted?: string };
-    container?: { raw?: string };
-    duration?: { formatted?: string };
-    bitrate?: { formatted?: string };
-  };
-  video?: {
-    codec?: { full?: string; raw?: string };
-    pixelFormat?: { full?: string; raw?: string };
-    resolution?: { raw?: string };
-    bitrate?: { formatted?: string };
-    fps?: { formatted?: string };
-  };
-  audio?: {
-    codec?: { full?: string; raw?: string };
-    sampleRate?: { formatted?: string };
-    channels?: { raw?: string; count?: number };
-    format?: string;
-    bitrate?: { formatted?: string };
-  };
-  videoStreams?: any[];
-  audioStreams?: any[];
-  metadata?: any;
-}
+import {
+  Command,
+  FileInfo,
+  ProcessedCommand,
+  CropAccumulator,
+  ToFfmpegProps,
+  OptimizedCropParams,
+  TrimParams,
+  CropParams,
+  ScaleParams,
+  TextOverlayParams,
+  FadeParams,
+  ContentOverlayParams,
+  CompressParams,
+  ConvertParams,
+} from "../../lib/types";
 
-interface Command {
-  type: string;
-  params: Record<string, any>;
-}
-
-interface ToFfmpegProps {
-  commands: Command[] | unknown;
-  fileInfo: FileInfo;
-}
-
-interface ProcessedCommand {
-  type: "input" | "video-filter" | "audio-filter" | "output" | "global";
-  value: string;
-  order: number;
-}
-
-interface CropAccumulator {
-  leftCrop: number;
-  rightCrop: number;
-  topCrop: number;
-  bottomCrop: number;
-}
 // Command processing order (lower numbers execute first)
 const COMMAND_ORDER = {
   // Input timing commands (before -i)
@@ -84,8 +52,9 @@ function optimizeCrops(commands: Command[], fileInfo?: FileInfo): Command[] {
 
   // Process each crop command and accumulate the values
   cropCommands.forEach((cmd, index) => {
-    const size = parseInt(cmd.params.cropSize.replace("px", ""));
-    const side = cmd.params.side;
+    const cropParams = cmd.params as CropParams;
+    const size = parseInt(cropParams.cropSize.replace("px", ""));
+    const side = cropParams.side;
 
     console.log(`Processing crop ${index + 1}: ${size}px from ${side}`);
 
@@ -135,7 +104,7 @@ function optimizeCrops(commands: Command[], fileInfo?: FileInfo): Command[] {
 
 function createOptimizedCropCommand(
   accumulator: CropAccumulator,
-  fileInfo?: FileInfo,
+  fileInfo?: FileInfo
 ): Command {
   // Validate that we don't crop more than the video dimensions
   if (fileInfo?.video?.resolution?.raw) {
@@ -148,13 +117,13 @@ function createOptimizedCropCommand(
 
     if (totalWidthCrop >= width) {
       throw new Error(
-        `Total width crop (${totalWidthCrop}px) exceeds video width (${width}px)`,
+        `Total width crop (${totalWidthCrop}px) exceeds video width (${width}px)`
       );
     }
 
     if (totalHeightCrop >= height) {
       throw new Error(
-        `Total height crop (${totalHeightCrop}px) exceeds video height (${height}px)`,
+        `Total height crop (${totalHeightCrop}px) exceeds video height (${height}px)`
       );
     }
   }
@@ -167,14 +136,14 @@ function createOptimizedCropCommand(
       topCrop: accumulator.topCrop,
       bottomCrop: accumulator.bottomCrop,
       isOptimized: true,
-    },
+    } as OptimizedCropParams,
   };
 }
 // Build individual filter functions
 function buildCropFilter(
   cropSize: string,
   side: string,
-  fileInfo?: FileInfo,
+  fileInfo?: FileInfo
 ): string {
   const size = parseInt(cropSize.replace("px", ""));
 
@@ -237,7 +206,7 @@ function buildCropFilter(
 
     if (outputWidth <= 0 || outputHeight <= 0) {
       throw new Error(
-        `Invalid crop dimensions: ${outputWidth}x${outputHeight}`,
+        `Invalid crop dimensions: ${outputWidth}x${outputHeight}`
       );
     }
 
@@ -270,7 +239,7 @@ function buildCropFilter(
 function buildScaleFilter(
   width: string,
   height: string,
-  aspectRatio: string,
+  aspectRatio: string
 ): string {
   if (aspectRatio === "preserve") {
     return `scale=${width}:${height}:force_original_aspect_ratio=decrease`;
@@ -280,7 +249,7 @@ function buildScaleFilter(
 
 function buildTextOverlayFilter(
   text: string,
-  position: string,
+  position: string
   //alignment?: string,
 ): string {
   const cleanText = text.replace(/"/g, "");
@@ -314,7 +283,7 @@ function buildFadeFilter(operation: string, duration: string): string {
 
 function buildContentOverlayFilter(
   content: string,
-  contentType: string,
+  contentType: string
   //position: string,
 ): string {
   const cleanContent = content.replace(/"/g, "");
@@ -327,7 +296,10 @@ function buildContentOverlayFilter(
   return `overlay=${cleanContent}`;
 }
 
-function buildOptimizedCropFilter(params: any, fileInfo?: FileInfo): string {
+function buildOptimizedCropFilter(
+  params: OptimizedCropParams,
+  fileInfo?: FileInfo
+): string {
   const { leftCrop, rightCrop, topCrop, bottomCrop } = params;
 
   // If no cropping needed, return empty
@@ -347,7 +319,7 @@ function buildOptimizedCropFilter(params: any, fileInfo?: FileInfo): string {
     const yOffset = topCrop; // Start after top crop
 
     console.log(
-      `Optimized crop: ${originalWidth}x${originalHeight} -> ${outputWidth}x${outputHeight} at ${xOffset},${yOffset}`,
+      `Optimized crop: ${originalWidth}x${originalHeight} -> ${outputWidth}x${outputHeight} at ${xOffset},${yOffset}`
     );
 
     return `crop=${outputWidth}:${outputHeight}:${xOffset}:${yOffset}`;
@@ -372,13 +344,13 @@ function buildOptimizedCropFilter(params: any, fileInfo?: FileInfo): string {
 // Updated main processing function
 function processAndReorderCommands(
   commands: Command[],
-  fileInfo: FileInfo,
+  fileInfo: FileInfo
 ): string {
   // First, optimize crops
   const optimizedCommands = optimizeCrops(commands, fileInfo);
 
   console.log(
-    `Original commands: ${commands.length}, Optimized: ${optimizedCommands.length}`,
+    `Original commands: ${commands.length}, Optimized: ${optimizedCommands.length}`
   );
 
   const processedCommands: ProcessedCommand[] = [];
@@ -389,70 +361,72 @@ function processAndReorderCommands(
   optimizedCommands.forEach((command) => {
     try {
       switch (command.type) {
-        case "Trim":
+        case "Trim": {
+          const params = command.params as TrimParams;
           processedCommands.push({
             type: "input",
-            value: `-ss ${command.params.start} -to ${command.params.end}`,
+            value: `-ss ${params.start} -to ${params.end}`,
             order: COMMAND_ORDER["input-trim"],
           });
           break;
-
-        case "Crop":
+        }
+        case "Crop": {
           // Regular single crop (shouldn't happen after optimization, but kept for safety)
+          const params = command.params as CropParams;
           const cropFilter = buildCropFilter(
-            command.params.cropSize,
-            command.params.side,
-            fileInfo,
+            params.cropSize,
+            params.side,
+            fileInfo
           );
           if (cropFilter) videoFilters.push(cropFilter);
           break;
-
-        case "OptimizedCrop":
+        }
+        case "OptimizedCrop": {
           // Handle optimized crop
-          const optimizedFilter = buildOptimizedCropFilter(
-            command.params,
-            fileInfo,
-          );
+          const params = command.params as OptimizedCropParams;
+          const optimizedFilter = buildOptimizedCropFilter(params, fileInfo);
           if (optimizedFilter) videoFilters.push(optimizedFilter);
           break;
-
-        case "Scale":
+        }
+        case "Scale": {
+          const params = command.params as ScaleParams;
           const scaleFilter = buildScaleFilter(
-            command.params.width,
-            command.params.height,
-            command.params.aspectRatio,
+            params.width,
+            params.height,
+            params.aspectRatio
           );
           videoFilters.push(scaleFilter);
           break;
-
-        case "TextOverlay":
+        }
+        case "TextOverlay": {
+          const params = command.params as TextOverlayParams;
           const textFilter = buildTextOverlayFilter(
-            command.params.text,
-            command.params.position,
-            //command.params.alignment,
+            params.text,
+            params.position
+            //params.alignment,
           );
           videoFilters.push(textFilter);
           break;
-
-        case "Fade":
-          const fadeFilter = buildFadeFilter(
-            command.params.operation,
-            command.params.duration,
-          );
+        }
+        case "Fade": {
+          const params = command.params as FadeParams;
+          const fadeFilter = buildFadeFilter(params.operation, params.duration);
           videoFilters.push(fadeFilter);
           break;
-
-        case "ContentOverlay":
+        }
+        case "ContentOverlay": {
+          const params = command.params as ContentOverlayParams;
           const overlayFilter = buildContentOverlayFilter(
-            command.params.content,
-            command.params.contentType,
-            //command.params.position,
+            params.content,
+            params.contentType
+            //params.position,
           );
           videoFilters.push(overlayFilter);
           break;
-
-        case "Compress":
-          if (command.params.bucket === "video") {
+        }
+        case "Compress": {
+          const params = command.params as CompressParams;
+          if (params.bucket === "video") {
             processedCommands.push({
               type: "output",
               value: "-crf 23",
@@ -460,15 +434,16 @@ function processAndReorderCommands(
             });
           }
           break;
-
-        case "Convert":
+        }
+        case "Convert": {
+          const params = command.params as ConvertParams;
           processedCommands.push({
             type: "output",
-            value: `-f ${command.params.outputFormat}`,
+            value: `-f ${params.outputFormat}`,
             order: COMMAND_ORDER["output-format"],
           });
           break;
-
+        }
         default:
           console.warn(`Unknown command type: ${command.type}`);
       }
