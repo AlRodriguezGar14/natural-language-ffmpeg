@@ -34,7 +34,7 @@ export async function probeFile(file) {
 
     try {
       await ffmpeg.exec(["-i", file.name]);
-    } catch (e) {
+    } catch {
       // Expected error when probing. Ignore it
     }
 
@@ -181,7 +181,7 @@ export async function probeFile(file) {
     ffmpeg.off("log");
     try {
       await ffmpeg.deleteFile(file.name);
-    } catch (e) {
+    } catch {
       // Ignore cleanup errors
     }
   }

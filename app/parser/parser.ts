@@ -441,15 +441,13 @@ function processCommand(words: string[], startIndex: number): Result {
 
   // Extract tokens for this command
   const commandTokens = words.slice(startIndex, endIndex);
-
-  // Now validate the tokens
   return validateCommandPatterns(commandTokens);
 }
 
 export default function parser(input: string) {
   const code = input.replace(";", " ");
   console.log(code);
-  const commands: unknown[] = [];
+  const commands: Command[] = [];
   const errors: string[] = [];
   const parsedCommands: string[] = [];
   const words = code.match(pattern);

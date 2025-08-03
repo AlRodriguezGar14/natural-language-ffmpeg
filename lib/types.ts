@@ -203,10 +203,6 @@ export interface CommandPattern {
   createNode: (params: Record<string, string>) => Command;
 }
 
-export interface Result {
-  success: boolean;
-  lastIndex: number;
-  node?: Command;
-  error?: string;
-  source?: string;
-} 
+export type Result =
+  | { success: false; lastIndex: number; error: string }
+  | { success: true; lastIndex: number; node: Command; source: string; error: undefined }

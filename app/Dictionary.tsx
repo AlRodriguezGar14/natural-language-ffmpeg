@@ -90,7 +90,7 @@ export default function Dictionary() {
     naturalCode: string;
     ffmpegCode: string;
     explanation: string;
-    icon: react.ForwardRefExoticComponent<Omit<LucideProps, "ref">>;
+    icon: React.ForwardRefExoticComponent<Omit<LucideProps, "ref">>;
   }) => (
     <Card className="bg-[#161F27] border-transparent">
       <CardHeader>

@@ -6,6 +6,7 @@ import { commandPatterns } from "../parser/parser";
 import { ToFfmpeg } from "./ffmpegCompiler";
 import FileAnalyzer from "./FileAnalyzer";
 import { useRouter } from "next/navigation";
+import { Command } from "@/lib/types";
 
 interface Token {
   type: string;
@@ -325,7 +326,7 @@ fade in for 10s
   const highlighterRef = useRef<HTMLDivElement>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [debug, setDebug] = useState(false);
-  const [commands, setCommands] = useState<unknown[]>([]);
+  const [commands, setCommands] = useState<Command[]>([]);
   const [parsedCommands, setParsedCommands] = useState<string[]>([]);
   const router = useRouter();
 
