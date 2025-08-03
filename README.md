@@ -20,21 +20,21 @@ ffmpeg -i input.mp4 -vf "crop=1820:1080:100:0,scale=1280:720:force_original_aspe
 
 ## Features
 
-*   **Human-Readable Syntax:** Write video editing commands in a simple, intuitive language.
-*   **Automatic Translation:** Automatically translate natural language commands to FFmpeg syntax.
-*   **Command Optimization:** Automatically optimize commands for faster processing.
-*   **Web-Based UI:** A simple, web-based UI for writing and testing commands.
-*   **File Analysis:** Analyze media files to get information about their properties.
-*   **Extensible:** The language is designed to be extensible, with support for new commands and features.
+- **Human-Readable Syntax:** Write video editing commands in a simple, intuitive language.
+- **Automatic Translation:** Automatically translate natural language commands to FFmpeg syntax.
+- **Command Optimization:** Automatically optimize commands for faster processing.
+- **Web-Based UI:** A simple, web-based UI for writing and testing commands.
+- **File Analysis:** Analyze media files to get information about their properties.
+- **Extensible:** The language is designed to be extensible, with support for new commands and features.
 
 ## Project Structure
 
 The project is a monorepo with the following structure:
 
-*   `app/`: The main Next.js application, including the editor, dictionary, and parser.
-*   `components/`: Shared UI components used throughout the application.
-*   `lib/`: Shared libraries and types used by the application.
-*   `public/`: Static assets, including the FFmpeg WASM build.
+- `app/`: The main Next.js application, including the editor, dictionary, and parser.
+- `components/`: Shared UI components used throughout the application.
+- `lib/`: Shared libraries and types used by the application.
+- `public/`: Static assets, including the FFmpeg WASM build.
 
 ## Natural FFmpeg Language
 
@@ -50,50 +50,43 @@ For a complete list of components and their usage, please see the [components](/
 
 ## Todo List
 
-
 - [x] **Expand the dictionary with the exact options for each command**
-
   - [x] Document all valid parameters for each command
   - [x] Add validation rules for each parameter
   - [x] Include examples for complex operations
 
 - [ ] **Make arguments optional**
-
   - [ ] Update parser logic to correctly handle omitted optional tokens.
   - [ ] Implement default values for commands when optional arguments are not provided.
   - [ ] The current parser structure defines tokens as `optional: false`, requiring all arguments to be present.
 
 - [ ] **Implement the `burn` command**
-    - [ ] The command is designed to support `text`, `image` and `subtitles` as `contentTypes`, but is not implemented yet
+  - [ ] The command is designed to support `text`, `image` and `subtitles` as `contentTypes`, but is not implemented yet
 
 - [ ] **Expand the `convert` command**
-    - [ ] The command should be expanded to support more output formats
-    - [ ] It should also validate that the conversion is from a valid format to another valid format
+  - [ ] The command should be expanded to support more output formats
+  - [ ] It should also validate that the conversion is from a valid format to another valid format
 
 - [ ] **Expand the `compress` command**
-    - [ ] The command should be expanded to allow for more granular control over the compression settings
+  - [ ] The command should be expanded to allow for more granular control over the compression settings
 
 - [ ] **Expand the burn-in text to receive color and transparency as arguments**
-
   - [ ] Allow color specification (hex, RGB, named colors)
   - [ ] Add transparency/alpha channel support
   - [ ] Support font selection and sizing options
   - [ ] Implement `alignment` and `margin` for the `add_text` command
 
 - [ ] **Add new filters**
-
   - [ ] Remove duplicate frames in x pattern
   - [ ] Add denoising filters
   - [ ] Support advanced color grading
   - [ ] Implement speed adjustment (slow motion, time-lapse)
 
 - [ ] **Improve error handling and validation**
-
   - [ ] Provide more helpful error messages from the compiler
   - [ ] Implement syntax checking before processing
 
 - [ ] **Implement a User-Defined Command System**
-
   - [ ] **Refactor the Parser and Compiler for Extensibility:**
     - [ ] Modify the parser to load commands from a dynamic source instead of the hardcoded `commandPatterns` array.
 
@@ -114,10 +107,8 @@ For a complete list of components and their usage, please see the [components](/
 ## Getting Started
 
 ```bash
-npm run dev
+npm run build && npm start
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the Natural FFmpeg Language documentation and examples.
 
 ## Contributing
 
