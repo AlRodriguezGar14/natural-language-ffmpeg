@@ -91,6 +91,11 @@ export interface CommentParams {
   content: string;
 }
 
+export interface InputParams {
+  fileSelector: string;
+  filename?: string;
+}
+
 // Union type for all command parameters
 export type CommandParams = 
   | TrimParams
@@ -102,10 +107,12 @@ export type CommandParams =
   | FadeParams
   | ContentOverlayParams
   | TextOverlayParams
-  | CommentParams;
+  | CommentParams
+  | InputParams;
 
 // Command types enum
 export type CommandType = 
+  | "Input"
   | "Trim"
   | "Convert"
   | "Compress"
@@ -162,6 +169,10 @@ export function isTextOverlayCommand(command: Command): command is Command & { p
 
 export function isCommentCommand(command: Command): command is Command & { params: CommentParams } {
   return command.type === "Comment";
+}
+
+export function isInputCommand(command: Command): command is Command & { params: InputParams } {
+  return command.type === "Input";
 }
 
 // Parser result interface

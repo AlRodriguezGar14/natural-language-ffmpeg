@@ -51,6 +51,22 @@ const pattern = /(?:#[^\n]*\n|"[^"]*"|[^\s"#]+)/g;
 
 export const commandPatterns: CommandPattern[] = [
   {
+    name: "input",
+    expectedTokens: [
+      { position: 1, expected: /\/|.*\.(mp4|avi|mov|mkv|webm|mp3|wav|flac|aac|jpg|jpeg|png|gif|srt|ass|vtt)$/i, paramName: "fileSelector", optional: false },
+    ],
+    validate: () => {
+      return true;
+    },
+    createNode: (params): Command => ({
+      type: "Input",
+      params: {
+        fileSelector: params.fileSelector,
+        filename: params.fileSelector !== "/" ? params.fileSelector : undefined,
+      },
+    }),
+  },
+  {
     name: "trim",
     expectedTokens: [
       { position: 1, expected: "from", optional: false },
@@ -468,6 +484,18 @@ export default function parser(input: string) {
           content: words[i],
         },
       });
+    }
+
+    if (words[i] === "input") {
+      const result = processCommand(words, i);
+      i += result.lastIndex;
+
+      if (!result.success) {
+        errors.push(result.error ?? "");
+      } else {
+        commands.push(result.node);
+        parsedCommands.push(result.source ?? "");
+      }
     }
 
     if (words[i] === "trim") {
