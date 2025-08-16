@@ -351,6 +351,8 @@ export const commandPatterns: CommandPattern[] = [
   },
 ];
 
+const validCommands = commandPatterns.map((pattern) => pattern.name)
+
 function validateTrimParams(start: string, end: string): boolean {
   /**
    * HH:MM:SS.ms, MM:SS or SS format
@@ -522,103 +524,7 @@ export default function parser(input: string) {
         },
       });
     }
-    if (words[i] === "remove_frames") {
-      const result = processCommand(words, i);
-      i += result.lastIndex;
-      if (!result.success) {
-        errors.push(result.error ?? "");
-      } else {
-        commands.push(result.node);
-        parsedCommands.push(result.source ?? "");
-      }
-    }
-
-    if (words[i] === "input") {
-      const result = processCommand(words, i);
-      i += result.lastIndex;
-
-      if (!result.success) {
-        errors.push(result.error ?? "");
-      } else {
-        commands.push(result.node);
-        parsedCommands.push(result.source ?? "");
-      }
-    }
-
-    if (words[i] === "trim") {
-      const result = processCommand(words, i);
-      i += result.lastIndex;
-
-      if (!result.success) {
-        errors.push(result.error ?? "");
-      } else {
-        commands.push(result.node);
-        parsedCommands.push(result.source ?? "");
-      }
-    }
-    if (words[i] === "add_text") {
-      const result = processCommand(words, i);
-      i += result.lastIndex;
-
-      if (!result.success) {
-        errors.push(result.error ?? "");
-      } else {
-        commands.push(result.node);
-        parsedCommands.push(result.source ?? "");
-      }
-    }
-    if (words[i] === "burn") {
-      const result = processCommand(words, i);
-      i += result.lastIndex;
-
-      if (!result.success) {
-        errors.push(result.error ?? "");
-      } else {
-        commands.push(result.node);
-        parsedCommands.push(result.source ?? "");
-      }
-    }
-    if (words[i] == "compress") {
-      const result = processCommand(words, i);
-      i += result.lastIndex;
-      if (!result.success) {
-        errors.push(result.error ?? "");
-      } else {
-        commands.push(result.node);
-        parsedCommands.push(result.source ?? "");
-      }
-    }
-    if (words[i] == "convert") {
-      const result = processCommand(words, i);
-      i += result.lastIndex;
-      if (!result.success) {
-        errors.push(result.error ?? "");
-      } else {
-        commands.push(result.node);
-        parsedCommands.push(result.source ?? "");
-      }
-    }
-    if (words[i] == "scale") {
-      const result = processCommand(words, i);
-      i += result.lastIndex;
-      if (!result.success) {
-        errors.push(result.error ?? "");
-      } else {
-        commands.push(result.node);
-        parsedCommands.push(result.source ?? "");
-      }
-    }
-    if (words[i] == "fade") {
-      const result = processCommand(words, i);
-      i += result.lastIndex;
-      if (!result.success) {
-        errors.push(result.error ?? "");
-      } else {
-        commands.push(result.node);
-        parsedCommands.push(result.source ?? "");
-      }
-    }
-    if (words[i] == "crop") {
+    if (validCommands.includes(words[i])) {
       const result = processCommand(words, i);
       i += result.lastIndex;
       if (!result.success) {

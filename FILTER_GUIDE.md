@@ -35,18 +35,7 @@ Add your command pattern to the `commandPatterns` array:
 - `validate`: Function to validate parameters
 - `createNode`: Function to create the Command object
 
-### 3. Add Parser Logic (`parser.ts`)
-
-Add the command check in the main parsing loop:
-
-**What this does:**
-
-- Checks if current word matches your command
-- Calls `processCommand` to match against patterns
-- Handles success/error cases
-- Advances parser position
-
-### 4. Add Filter Builder (`ffmpegCompiler.tsx`)
+### 3. Add Filter Builder (`ffmpegCompiler.tsx`)
 
 Create the filter building function:
 
@@ -57,7 +46,7 @@ Create the filter building function:
 - Handle edge cases and validation
 - Use consistent naming: `build[CommandType]Filter`
 
-### 5. Add Compiler Case (`ffmpegCompiler.tsx`)
+### 4. Add Compiler Case (`ffmpegCompiler.tsx`)
 
 Add your command processing in `processAndReorderCommands`:
 
