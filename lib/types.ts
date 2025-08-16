@@ -37,6 +37,9 @@ export interface FileInfo {
 }
 
 // Command parameter types
+export interface DeduplicateParams {
+  cycle: number;
+}
 export interface TrimParams {
   start: string;
   end: string;
@@ -98,6 +101,7 @@ export interface InputParams {
 
 // Union type for all command parameters
 export type CommandParams = 
+  | DeduplicateParams
   | TrimParams
   | ConvertParams
   | CompressParams
@@ -112,6 +116,7 @@ export type CommandParams =
 
 // Command types enum
 export type CommandType = 
+  | "Deduplicate"
   | "Input"
   | "Trim"
   | "Convert"
@@ -131,6 +136,9 @@ export interface Command {
 }
 
 // Type guards for command parameters
+export function isDeduplicateCommand(command: Command): command is Command & { params: DeduplicateParams } {
+  return command.type === "Deduplicate";
+}
 export function isTrimCommand(command: Command): command is Command & { params: TrimParams } {
   return command.type === "Trim";
 }

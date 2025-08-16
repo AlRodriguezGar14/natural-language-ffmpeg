@@ -1,5 +1,5 @@
-import { 
-  CommandPattern, 
+import {
+  CommandPattern,
   Command,
   TrimParams,
   CompressParams,
@@ -8,8 +8,9 @@ import {
   FadeParams,
   ContentOverlayParams,
   TextOverlayParams,
-  Result
-} from '../../lib/types';
+  Result,
+  DeduplicateParams,
+} from "../../lib/types";
 
 /**
  *  BRAINSTORM:
@@ -51,9 +52,33 @@ const pattern = /(?:#[^\n]*\n|"[^"]*"|[^\s"#]+)/g;
 
 export const commandPatterns: CommandPattern[] = [
   {
+    name: "remove_frames",
+    expectedTokens: [
+      { position: 1, expected: "every", optional: false },
+      { position: 2, expected: /^\d+$/, paramName: "cycle", optional: false },
+    ],
+    validate: (params) => {
+      const cycle = parseInt(params.cycle);
+      if (cycle < 2 || cycle > 30) return "Invalid cycle";
+      return true;
+    },
+    createNode: (params) => ({
+      type: "Deduplicate",
+      params: {
+        cycle: parseInt(params.cycle),
+      } as DeduplicateParams,
+    }),
+  },
+  {
     name: "input",
     expectedTokens: [
-      { position: 1, expected: /\/|.*\.(mp4|avi|mov|mkv|webm|mp3|wav|flac|aac|jpg|jpeg|png|gif|srt|ass|vtt)$/i, paramName: "fileSelector", optional: false },
+      {
+        position: 1,
+        expected:
+          /\/|.*\.(mp4|avi|mov|mkv|webm|mp3|wav|flac|aac|jpg|jpeg|png|gif|srt|ass|vtt)$/i,
+        paramName: "fileSelector",
+        optional: false,
+      },
     ],
     validate: () => {
       return true;
@@ -188,7 +213,14 @@ export const commandPatterns: CommandPattern[] = [
       type: "Crop",
       params: {
         cropSize: params.cropSize,
-        side: params.side as "top" | "bottom" | "left" | "right" | "width" | "height" | "each",
+        side: params.side as
+          | "top"
+          | "bottom"
+          | "left"
+          | "right"
+          | "width"
+          | "height"
+          | "each",
       } as CropParams,
     }),
   },
@@ -306,7 +338,12 @@ export const commandPatterns: CommandPattern[] = [
       type: "TextOverlay",
       params: {
         text: params.text,
-        position: params.position as "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center",
+        position: params.position as
+          | "top-left"
+          | "top-right"
+          | "bottom-left"
+          | "bottom-right"
+          | "center",
         alignment: params.alignment ?? "left",
         margin: params.margin ? parseInt(params.margin) : 0,
       } as TextOverlayParams,
@@ -484,6 +521,16 @@ export default function parser(input: string) {
           content: words[i],
         },
       });
+    }
+    if (words[i] === "remove_frames") {
+      const result = processCommand(words, i);
+      i += result.lastIndex;
+      if (!result.success) {
+        errors.push(result.error ?? "");
+      } else {
+        commands.push(result.node);
+        parsedCommands.push(result.source ?? "");
+      }
     }
 
     if (words[i] === "input") {

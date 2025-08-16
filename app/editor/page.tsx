@@ -71,6 +71,7 @@ const OPERATOR = [
   "in/out",
   "for",
   "at",
+  "every",
 ];
 
 const POSITION = [
@@ -472,6 +473,7 @@ trim from 10 to 20
 convert to mp4
 trim from 10:30 to 12:30
 fade in for 10s
+remove_frames every 4
 `);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);

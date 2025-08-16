@@ -8,7 +8,7 @@ This project provides a dictionary and translator for Natural FFmpeg Language, a
 
 Example:
 
-```
+``` natural_language_ffmpeg
 # Natural Language
 crop 100px from left
 scale to 1280x720 preserve aspect ratio
@@ -77,7 +77,7 @@ For a complete list of components and their usage, please see the [components](/
   - [ ] Implement `alignment` and `margin` for the `add_text` command
 
 - [ ] **Add new filters**
-  - [ ] Remove duplicate frames in x pattern
+  - [x] Remove duplicate frames in x pattern
   - [ ] Add denoising filters
   - [ ] Support advanced color grading
   - [ ] Implement speed adjustment (slow motion, time-lapse)
@@ -102,7 +102,10 @@ For a complete list of components and their usage, please see the [components](/
     - [ ] The compiler will need to be able to take the user's input and correctly substitute the arguments into the template.
 
   - [ ] **Update Documentation:**
-    - [ ] Add a new section to the documentation that explains how to create, manage, and use custom commands.
+    - [X] Add a new section to the documentation that explains how to create, manage, and use custom commands. Available at FILTER_GUIDE.md
+    - [ ] Add the new filters to the dictionary: remove_frames
+    - [X] Add the new file selection guide. Available at FILE_SELECTOR_USAGE.md
+    - [ ] Add the new file selection documentation to the dictionary
 
 ## Getting Started
 

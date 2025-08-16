@@ -13,6 +13,7 @@ import {
   ContentOverlayParams,
   CompressParams,
   ConvertParams,
+  DeduplicateParams,
 } from "../../lib/types";
 
 // Command processing order (lower numbers execute first)
@@ -247,6 +248,10 @@ function buildScaleFilter(
   return `scale=${width}:${height}`;
 }
 
+function buildDeduplicateFilter(cycle: number): string {
+  return `decimate=cycle=${cycle}`;
+}
+
 function buildTextOverlayFilter(
   text: string,
   position: string
@@ -366,6 +371,12 @@ function processAndReorderCommands(
   optimizedCommands.forEach((command) => {
     try {
       switch (command.type) {
+        case "Deduplicate": {
+          const params = command.params as DeduplicateParams;
+          const deduplicateFilter = buildDeduplicateFilter(params.cycle);
+          videoFilters.push(deduplicateFilter);
+          break;
+        }
         case "Trim": {
           const params = command.params as TrimParams;
           processedCommands.push({
@@ -525,6 +536,14 @@ export function ToFfmpeg({ commands, fileInfo }: ToFfmpegProps) {
           <div className="text-gray-300">
             Resolution: {fileInfo.video?.resolution?.raw || "Unknown"}
           </div>
+          <div className="text-gray-300">
+            Codec: {fileInfo.video?.codec?.raw || "Unknown"}
+          </div>
+          <div className="text-gray-300">
+            Framerate: {fileInfo.video?.fps?.formatted || "Unknown"}
+          </div>
+          <br/>
+          <p>{JSON.stringify(fileInfo, null, 2)}</p>
         </div>
       </details>
     </div>
