@@ -6,7 +6,7 @@ export interface FileInfo {
     filename?: string;
     size?: { formatted?: string };
     container?: { raw?: string };
-    duration?: { formatted?: string };
+    duration?: { formatted?: string, seconds?: number };
     bitrate?: { formatted?: string };
   };
   video?: {
@@ -14,7 +14,7 @@ export interface FileInfo {
     pixelFormat?: { full?: string; raw?: string };
     resolution?: { raw?: string };
     bitrate?: { formatted?: string };
-    fps?: { formatted?: string };
+    fps?: { formatted?: string, raw?: number };
   };
   audio?: {
     codec?: { full?: string; raw?: string };

@@ -269,16 +269,21 @@ function buildTextOverlayFilter(
   return `drawtext=text='${cleanText}':fontsize=24:fontcolor=white:${pos}`;
 }
 
-function buildFadeFilter(operation: string, duration: string): string {
-  const durationSecs = duration.replace("s", "");
-
+function buildFadeFilter(operation: string, duration: string, fileInfo?: FileInfo): string {
+  const durationSecs = parseFloat(duration.replace("s", ""));
+  const fps = fileInfo?.video?.fps?.raw ? fileInfo.video.fps.raw : 23.976;
+  console.log(fileInfo)
+    const frameCount = Math.ceil(durationSecs * fps);
   if (operation === "in") {
-    return `fade=in:0:${durationSecs}`;
+    return `fade=t=in:s=1:n=${frameCount}`;
   } else if (operation === "out") {
-    return `fade=out:st=0:d=${durationSecs}`;
+    return `fade=t=out:s=0:n=${frameCount}`;
   }
+  const videoDurationSecs = fileInfo?.input?.duration?.seconds ?? 0;
+  const fadeOutStartSecs = videoDurationSecs - durationSecs;
+  const fadeOutStartFrame = Math.floor(fadeOutStartSecs * fps);
+  return `fade=t=in:s=1:n=${frameCount},fade=t=out:s=${fadeOutStartFrame}:n=${frameCount}`;
 
-  return `fade=${operation}:0:${durationSecs}`;
 }
 
 function buildContentOverlayFilter(
@@ -410,7 +415,7 @@ function processAndReorderCommands(
         }
         case "Fade": {
           const params = command.params as FadeParams;
-          const fadeFilter = buildFadeFilter(params.operation, params.duration);
+          const fadeFilter = buildFadeFilter(params.operation, params.duration, fileInfo);
           videoFilters.push(fadeFilter);
           break;
         }
