@@ -619,13 +619,16 @@ remove_frames every 4
   };
 
   const adjustTextareaHeight = () => {
-    if (textareaRef.current) {
+    if (textareaRef.current && highlighterRef.current) {
       // Reset height temporarily to get accurate scrollHeight
       textareaRef.current.style.height = "auto";
 
       // Set height to scrollHeight plus padding to maintain consistent padding
       const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${scrollHeight}px`;
+      const newHeight = Math.max(scrollHeight, 384); // min-h-96 = 384px
+      
+      textareaRef.current.style.height = `${newHeight}px`;
+      highlighterRef.current.style.height = `${newHeight}px`;
     }
   };
 
@@ -670,22 +673,26 @@ remove_frames every 4
             boxSizing: "border-box",
           }}
         />
-        <button
-          onClick={() => {
-            setDebug((debug) => !debug);
-          }}
-          className="mx-12 mb-8 text-[#C1CDCD] bg-[#31383F] py-2 px-4"
-        >
-          Debug
-        </button>
-        <button
-          onClick={() => {
-            router.push("/docs");
-          }}
-          className="mx-12 mb-8 text-[#C1CDCD] bg-[#31383F] py-2 px-4"
-        >
-          Dictionary
-        </button>
+        
+        {/* Button container */}
+        <div className="flex gap-4 px-12 pb-8">
+          <button
+            onClick={() => {
+              setDebug((debug) => !debug);
+            }}
+            className="text-[#C1CDCD] bg-[#31383F] py-2 px-4 rounded hover:bg-[#3A4149] transition-colors"
+          >
+            Debug
+          </button>
+          <button
+            onClick={() => {
+              router.push("/docs");
+            }}
+            className="text-[#C1CDCD] bg-[#31383F] py-2 px-4 rounded hover:bg-[#3A4149] transition-colors"
+          >
+            Dictionary
+          </button>
+        </div>
       </div>
       {fileInfo && <ToFfmpeg commands={commands} fileInfo={fileInfo} />}
       {isLoadingFile && (

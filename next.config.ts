@@ -18,6 +18,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Ensure proper hydration handling
+  reactStrictMode: true,
+  // Handle WebAssembly files properly
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+    };
+    return config;
+  },
 };
 
 export default nextConfig;
